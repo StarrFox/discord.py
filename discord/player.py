@@ -3,7 +3,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2015-2019 Rapptz
+Copyright (c) 2015-2020 Rapptz
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import threading
+import traceback
 import subprocess
 import audioop
 import asyncio
@@ -32,6 +33,7 @@ import logging
 import shlex
 import time
 import json
+import sys
 import re
 
 from .errors import ClientException
@@ -118,7 +120,7 @@ class FFmpegAudio(AudioSource):
     User created AudioSources using FFmpeg differently from how :class:`FFmpegPCMAudio` and
     :class:`FFmpegOpusAudio` work should subclass this.
 
-    .. versionadded:: 1.3.0
+    .. versionadded:: 1.3
     """
 
     def __init__(self, source, *, executable='ffmpeg', args, **subprocess_kwargs):
@@ -201,7 +203,7 @@ class FFmpegPCMAudio(FFmpegAudio):
 
     def __init__(self, source, *, executable='ffmpeg', pipe=False, stderr=None, before_options=None, options=None):
         args = []
-        subprocess_kwargs = {'stdin': source if pipe else None, 'stderr': stderr}
+        subprocess_kwargs = {'stdin': source if pipe else subprocess.DEVNULL, 'stderr': stderr}
 
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
@@ -231,16 +233,16 @@ class FFmpegOpusAudio(FFmpegAudio):
 
     This launches a sub-process to a specific input file given.  However, rather than
     producing PCM packets like :class:`FFmpegPCMAudio` does that need to be encoded to
-    opus, this class produces opus packets, skipping the encoding step done by the library.
+    Opus, this class produces Opus packets, skipping the encoding step done by the library.
 
     Alternatively, instead of instantiating this class directly, you can use
     :meth:`FFmpegOpusAudio.from_probe` to probe for bitrate and codec information.  This
-    can be used to opportunistically skip pointless re-encoding of existing opus audio data
+    can be used to opportunistically skip pointless re-encoding of existing Opus audio data
     for a boost in performance at the cost of a short initial delay to gather the information.
     The same can be achieved by passing ``copy`` to the ``codec`` parameter, but only if you
-    know that the input source is opus encoded beforehand.
+    know that the input source is Opus encoded beforehand.
 
-    .. versionadded:: 1.3.0
+    .. versionadded:: 1.3
 
     .. warning::
 
@@ -250,7 +252,7 @@ class FFmpegOpusAudio(FFmpegAudio):
     Parameters
     ------------
     source: Union[:class:`str`, :class:`io.BufferedIOBase`]
-        The input that ffmpeg will take and convert to PCM bytes.
+        The input that ffmpeg will take and convert to Opus bytes.
         If ``pipe`` is True then this is a file-like object that is
         passed to the stdin of ffmpeg.
     bitrate: :class:`int`
@@ -258,14 +260,14 @@ class FFmpegOpusAudio(FFmpegAudio):
     codec: Optional[:class:`str`]
         The codec to use to encode the audio data.  Normally this would be
         just ``libopus``, but is used by :meth:`FFmpegOpusAudio.from_probe` to
-        opportunistically skip pointlessly re-encoding opus audio data by passing
+        opportunistically skip pointlessly re-encoding Opus audio data by passing
         ``copy`` as the codec value.  Any values other than ``copy``, ``opus``, or
         ``libopus`` will be considered ``libopus``.  Defaults to ``libopus``.
 
         .. warning::
 
             Do not provide this parameter unless you are certain that the audio input is
-            already opus encoded.  For typical use :meth:`FFmpegOpusAudio.from_probe`
+            already Opus encoded.  For typical use :meth:`FFmpegOpusAudio.from_probe`
             should be used to determine the proper value for this parameter.
 
     executable: :class:`str`
@@ -291,7 +293,7 @@ class FFmpegOpusAudio(FFmpegAudio):
                  pipe=False, stderr=None, before_options=None, options=None):
 
         args = []
-        subprocess_kwargs = {'stdin': source if pipe else None, 'stderr': stderr}
+        subprocess_kwargs = {'stdin': source if pipe else subprocess.DEVNULL, 'stderr': stderr}
 
         if isinstance(before_options, str):
             args.extend(shlex.split(before_options))
@@ -602,11 +604,20 @@ class AudioPlayer(threading.Thread):
             self._call_after()
 
     def _call_after(self):
+        error = self._current_error
+
         if self.after is not None:
             try:
-                self.after(self._current_error)
-            except Exception:
+                self.after(error)
+            except Exception as exc:
                 log.exception('Calling the after function failed.')
+                exc.__context__ = error
+                traceback.print_exception(type(exc), exc, exc.__traceback__)
+        elif error:
+            msg = 'Exception in voice thread {}'.format(self.name)
+            log.exception(msg, exc_info=error)
+            print(msg, file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__)
 
     def stop(self):
         self._end.set()
