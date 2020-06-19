@@ -25,27 +25,25 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import copy
-from collections import namedtuple, defaultdict
+from collections import defaultdict, namedtuple
 
 from . import utils
-from .role import Role
-from .member import Member, VoiceState
-from .activity import create_activity
-from .emoji import Emoji
-from .errors import InvalidData
-from .permissions import PermissionOverwrite
-from .colour import Colour
-from .errors import InvalidArgument, ClientException
+from .asset import Asset
 from .channel import *
-from .enums import VoiceRegion, Status, ChannelType, try_enum, VerificationLevel, ContentFilter, NotificationLevel
-from .mixins import Hashable
-from .user import User
+from .colour import Colour
+from .emoji import Emoji
+from .enums import ChannelType, ContentFilter, NotificationLevel, VerificationLevel, VoiceRegion, try_enum
+from .errors import ClientException, InvalidArgument, InvalidData
+from .flags import SystemChannelFlags
 from .invite import Invite
 from .iterators import AuditLogIterator, MemberIterator
+from .member import Member, VoiceState
+from .mixins import Hashable
+from .permissions import PermissionOverwrite
+from .role import Role
+from .user import User
 from .webhook import Webhook
 from .widget import Widget
-from .asset import Asset
-from .flags import SystemChannelFlags
 
 BanEntry = namedtuple('BanEntry', 'reason user')
 _GuildLimit = namedtuple('_GuildLimit', 'emoji bitrate filesize')

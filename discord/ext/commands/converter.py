@@ -24,11 +24,10 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-import re
 import inspect
+import re
 
 import discord
-
 from .errors import BadArgument, NoPrivateMessage
 
 __all__ = (

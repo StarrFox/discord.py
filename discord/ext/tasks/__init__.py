@@ -1,13 +1,14 @@
 import asyncio
 import datetime
-import aiohttp
-import websockets
-import discord
 import inspect
 import logging
 import sys
 import traceback
 
+import aiohttp
+import websockets
+
+import discord
 from discord.backoff import ExponentialBackoff
 
 log = logging.getLogger(__name__)

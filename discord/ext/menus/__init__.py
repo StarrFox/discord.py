@@ -25,13 +25,12 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
-import discord
-
-import itertools
 import inspect
-import bisect
+import itertools
 import re
 from collections import OrderedDict, namedtuple
+
+import discord
 
 
 class MenuError(Exception):
