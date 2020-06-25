@@ -193,14 +193,17 @@ class ConnectionState:
 
     def store_user(self, data):
         # this way is 300% faster than `dict.setdefault`.
-        user_id = int(data['id'])
-        try:
-            return self._users[user_id]
-        except KeyError:
-            user = User(state=self, data=data)
-            if user.discriminator != '0000':
-                self._users[user_id] = user
-            return user
+        if self._cache_members:  # Causes cache issue if storing
+            user_id = int(data['id'])
+            try:
+                return self._users[user_id]
+            except KeyError:
+                user = User(state=self, data=data)
+                if user.discriminator != '0000':
+                    self._users[user_id] = user
+                return user
+        else:
+            return User(state=self, data=data)
 
     def get_user(self, id):
         return self._users.get(id)
