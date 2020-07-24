@@ -33,7 +33,7 @@ from .user import BaseUser
 from .utils import _get_as_snowflake, resolve_invite, snowflake_time
 
 
-class WidgetChannel(namedtuple('WidgetChannel', 'id name position')):
+class WidgetChannel(namedtuple("WidgetChannel", "id name position")):
     """Represents a "partial" widget channel.
 
     .. container:: operations
@@ -63,6 +63,7 @@ class WidgetChannel(namedtuple('WidgetChannel', 'id name position')):
     position: :class:`int`
         The channel's position
     """
+
     __slots__ = ()
 
     def __str__(self):
@@ -71,12 +72,13 @@ class WidgetChannel(namedtuple('WidgetChannel', 'id name position')):
     @property
     def mention(self):
         """:class:`str`: The string that allows you to mention the channel."""
-        return '<#%s>' % self.id
+        return "<#%s>" % self.id
 
     @property
     def created_at(self):
         """:class:`datetime.datetime`: Returns the channel's creation time in UTC."""
         return snowflake_time(self.id)
+
 
 class WidgetMember(BaseUser):
     """Represents a "partial" member of the widget's guild.
@@ -126,20 +128,32 @@ class WidgetMember(BaseUser):
     connected_channel: Optional[:class:`VoiceChannel`]
         Which channel the member is connected to.
     """
-    __slots__ = ('name', 'status', 'nick', 'avatar', 'discriminator',
-                 'id', 'bot', 'activity', 'deafened', 'suppress', 'muted',
-                 'connected_channel')
+
+    __slots__ = (
+        "name",
+        "status",
+        "nick",
+        "avatar",
+        "discriminator",
+        "id",
+        "bot",
+        "activity",
+        "deafened",
+        "suppress",
+        "muted",
+        "connected_channel",
+    )
 
     def __init__(self, *, state, data, connected_channel=None):
         super().__init__(state=state, data=data)
-        self.nick = data.get('nick')
-        self.status = try_enum(Status, data.get('status'))
-        self.deafened = data.get('deaf', False) or data.get('self_deaf', False)
-        self.muted = data.get('mute', False) or data.get('self_mute', False)
-        self.suppress = data.get('suppress', False)
+        self.nick = data.get("nick")
+        self.status = try_enum(Status, data.get("status"))
+        self.deafened = data.get("deaf", False) or data.get("self_deaf", False)
+        self.muted = data.get("mute", False) or data.get("self_mute", False)
+        self.suppress = data.get("suppress", False)
 
         try:
-            game = data['game']
+            game = data["game"]
         except KeyError:
             self.activity = None
         else:
@@ -151,6 +165,7 @@ class WidgetMember(BaseUser):
     def display_name(self):
         """:class:`str`: Returns the member's display name."""
         return self.nick if self.nick else self.name
+
 
 class Widget:
     """Represents a :class:`Guild` widget.
@@ -189,29 +204,40 @@ class Widget:
             retrieved is capped.
 
     """
-    __slots__ = ('_state', 'channels', '_invite', 'id', 'members', 'name')
+
+    __slots__ = ("_state", "channels", "_invite", "id", "members", "name")
 
     def __init__(self, *, state, data):
         self._state = state
-        self._invite = data['instant_invite']
-        self.name = data['name']
-        self.id = int(data['id'])
+        self._invite = data["instant_invite"]
+        self.name = data["name"]
+        self.id = int(data["id"])
 
         self.channels = []
-        for channel in data.get('channels', []):
-            _id = int(channel['id'])
-            self.channels.append(WidgetChannel(id=_id, name=channel['name'], position=channel['position']))
+        for channel in data.get("channels", []):
+            _id = int(channel["id"])
+            self.channels.append(
+                WidgetChannel(
+                    id=_id, name=channel["name"], position=channel["position"]
+                )
+            )
 
         self.members = []
         channels = {channel.id: channel for channel in self.channels}
-        for member in data.get('members', []):
-            connected_channel = _get_as_snowflake(member, 'channel_id')
+        for member in data.get("members", []):
+            connected_channel = _get_as_snowflake(member, "channel_id")
             if connected_channel in channels:
                 connected_channel = channels[connected_channel]
             elif connected_channel:
-                connected_channel = WidgetChannel(id=connected_channel, name='', position=0)
+                connected_channel = WidgetChannel(
+                    id=connected_channel, name="", position=0
+                )
 
-            self.members.append(WidgetMember(state=self._state, data=member, connected_channel=connected_channel))
+            self.members.append(
+                WidgetMember(
+                    state=self._state, data=member, connected_channel=connected_channel
+                )
+            )
 
     def __str__(self):
         return self.json_url
@@ -220,7 +246,9 @@ class Widget:
         return self.id == other.id
 
     def __repr__(self):
-        return '<Widget id={0.id} name={0.name!r} invite_url={0.invite_url!r}>'.format(self)
+        return "<Widget id={0.id} name={0.name!r} invite_url={0.invite_url!r}>".format(
+            self
+        )
 
     @property
     def created_at(self):

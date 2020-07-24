@@ -24,7 +24,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-from .errors import ExpectedClosingQuoteError, InvalidEndOfQuotedStringError, UnexpectedQuoteError
+from .errors import (
+    ExpectedClosingQuoteError,
+    InvalidEndOfQuotedStringError,
+    UnexpectedQuoteError,
+)
 
 # map from opening quotes to closing quotes
 _quotes = {
@@ -47,6 +51,7 @@ _quotes = {
     "〈": "〉",
 }
 _all_quotes = set(_quotes.keys()) | set(_quotes.values())
+
 
 class Separator:
     """An argument qualifier, which acts as the delimiter for arguments.
@@ -73,9 +78,11 @@ class Separator:
         Whether or not to strip whitespace from the arguments. By default,
         it is ``True``.
     """
-    def __init__(self, key=None, *, strip_ws=True):
+
+    def __init__(self, key=" ", *, strip_ws=True):
         self.key = key
         self.strip_ws = strip_ws
+
 
 class Encapsulator:
     """An argument qualifier, which acts as a drop-in replacement for quotes.
@@ -102,6 +109,7 @@ class Encapsulator:
         The ending key that represents the last quote character. If ``None``\,
         it will be set as the same key as ``start``.
     """
+
     def __init__(self, start, end=None):
         self.start = start
         self.end = end or start
@@ -129,7 +137,11 @@ class StringView:
         return self.index >= self.end
 
     def is_separator(self, c):
-        return c.isspace() if self.separator.key is None else c == self.separator.key
+        if self.separator is not None and self.separator.key is not None:
+            return c == self.separator.key
+        else:
+            return c.isspace()
+        # return c.isspace() if self.separator.key is None else c == self.separator.key
 
     def undo(self):
         self.index = self.previous
@@ -151,20 +163,20 @@ class StringView:
 
     def skip_string(self, string):
         strlen = len(string)
-        if self.buffer[self.index:self.index + strlen] == string:
+        if self.buffer[self.index : self.index + strlen] == string:
             self.previous = self.index
             self.index += strlen
             return True
         return False
 
     def read_rest(self):
-        result = self.buffer[self.index:]
+        result = self.buffer[self.index :]
         self.previous = self.index
         self.index = self.end
         return result
 
     def read(self, n):
-        result = self.buffer[self.index:self.index + n]
+        result = self.buffer[self.index : self.index + n]
         self.previous = self.index
         self.index += n
         return result
@@ -190,7 +202,7 @@ class StringView:
             except IndexError:
                 break
         self.previous = self.index
-        result = self.buffer[self.index:self.index + pos]
+        result = self.buffer[self.index : self.index + pos]
         self.index += pos
         return result
 
@@ -220,16 +232,16 @@ class StringView:
                     # unexpected EOF
                     raise ExpectedClosingQuoteError(close_quote)
 
-                r = ''.join(result)
+                r = "".join(result)
                 if self.separator.strip_ws:
                     r = r.strip()
-                return r 
+                return r
 
             # currently we accept strings in the format of "hello world"
             # to embed a quote inside the string you must escape it: "a \"world\""
             # separator characters (either a white space character or
             # a custom separator string) can also be escaped : hello\ world
-            if current == '\\':
+            if current == "\\":
                 next_char = self.get()
                 if not next_char:
                     # string ends with \ and no character after it
@@ -237,7 +249,7 @@ class StringView:
                         # if we're quoted then we're expecting a closing quote
                         raise ExpectedClosingQuoteError(close_quote)
                     # if we aren't then we just let it through
-                    return ''.join(result)
+                    return "".join(result)
 
                 if next_char in _escaped_quotes:
                     # escaped separator or quote
@@ -261,11 +273,11 @@ class StringView:
                     raise InvalidEndOfQuotedStringError(next_char)
 
                 # we're quoted so it's okay
-                return ''.join(result)
+                return "".join(result)
 
             if self.is_separator(current) and not is_quoted:
                 # end of word found
-                r = ''.join(result)
+                r = "".join(result)
                 if self.separator.strip_ws:
                     r = r.strip()
 
@@ -273,6 +285,7 @@ class StringView:
 
             result.append(current)
 
-
     def __repr__(self):
-        return '<StringView pos: {0.index} prev: {0.previous} end: {0.end} eof: {0.eof}>'.format(self)
+        return "<StringView pos: {0.index} prev: {0.previous} end: {0.end} eof: {0.eof}>".format(
+            self
+        )

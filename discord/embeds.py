@@ -35,12 +35,14 @@ class _EmptyEmbed:
         return False
 
     def __repr__(self):
-        return 'Embed.Empty'
+        return "Embed.Empty"
 
     def __len__(self):
         return 0
 
+
 EmptyEmbed = _EmptyEmbed()
+
 
 class EmbedProxy:
     def __init__(self, layer):
@@ -50,10 +52,17 @@ class EmbedProxy:
         return len(self.__dict__)
 
     def __repr__(self):
-        return 'EmbedProxy(%s)' % ', '.join(('%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')))
+        return "EmbedProxy(%s)" % ", ".join(
+            (
+                "%s=%r" % (k, v)
+                for k, v in self.__dict__.items()
+                if not k.startswith("_")
+            )
+        )
 
     def __getattr__(self, attr):
         return EmptyEmbed
+
 
 class Embed:
     """Represents a Discord embed.
@@ -98,27 +107,39 @@ class Embed:
         to denote that the value or attribute is empty.
     """
 
-    __slots__ = ('title', 'url', 'type', '_timestamp', '_colour', '_footer',
-                 '_image', '_thumbnail', '_video', '_provider', '_author',
-                 '_fields', 'description')
+    __slots__ = (
+        "title",
+        "url",
+        "type",
+        "_timestamp",
+        "_colour",
+        "_footer",
+        "_image",
+        "_thumbnail",
+        "_video",
+        "_provider",
+        "_author",
+        "_fields",
+        "description",
+    )
 
     Empty = EmptyEmbed
 
     def __init__(self, **kwargs):
         # swap the colour/color aliases
         try:
-            colour = kwargs['colour']
+            colour = kwargs["colour"]
         except KeyError:
-            colour = kwargs.get('color', EmptyEmbed)
+            colour = kwargs.get("color", EmptyEmbed)
 
         self.colour = colour
-        self.title = kwargs.get('title', EmptyEmbed)
-        self.type = kwargs.get('type', 'rich')
-        self.url = kwargs.get('url', EmptyEmbed)
-        self.description = kwargs.get('description', EmptyEmbed)
+        self.title = kwargs.get("title", EmptyEmbed)
+        self.type = kwargs.get("type", "rich")
+        self.url = kwargs.get("url", EmptyEmbed)
+        self.description = kwargs.get("description", EmptyEmbed)
 
         try:
-            timestamp = kwargs['timestamp']
+            timestamp = kwargs["timestamp"]
         except KeyError:
             pass
         else:
@@ -145,30 +166,38 @@ class Embed:
 
         # fill in the basic fields
 
-        self.title = data.get('title', EmptyEmbed)
-        self.type = data.get('type', EmptyEmbed)
-        self.description = data.get('description', EmptyEmbed)
-        self.url = data.get('url', EmptyEmbed)
+        self.title = data.get("title", EmptyEmbed)
+        self.type = data.get("type", EmptyEmbed)
+        self.description = data.get("description", EmptyEmbed)
+        self.url = data.get("url", EmptyEmbed)
 
         # try to fill in the more rich fields
 
         try:
-            self._colour = Colour(value=data['color'])
+            self._colour = Colour(value=data["color"])
         except KeyError:
             pass
 
         try:
-            self._timestamp = utils.parse_time(data['timestamp'])
+            self._timestamp = utils.parse_time(data["timestamp"])
         except KeyError:
             pass
 
-        for attr in ('thumbnail', 'video', 'provider', 'author', 'fields', 'image', 'footer'):
+        for attr in (
+            "thumbnail",
+            "video",
+            "provider",
+            "author",
+            "fields",
+            "image",
+            "footer",
+        ):
             try:
                 value = data[attr]
             except KeyError:
                 continue
             else:
-                setattr(self, '_' + attr, value)
+                setattr(self, "_" + attr, value)
 
         return self
 
@@ -178,28 +207,28 @@ class Embed:
 
     def __len__(self):
         total = len(self.title) + len(self.description)
-        for field in getattr(self, '_fields', []):
-            total += len(field['name']) + len(field['value'])
+        for field in getattr(self, "_fields", []):
+            total += len(field["name"]) + len(field["value"])
 
         try:
             footer = self._footer
         except AttributeError:
             pass
         else:
-            total += len(footer['text'])
+            total += len(footer["text"])
 
         try:
             author = self._author
         except AttributeError:
             pass
         else:
-            total += len(author['name'])
+            total += len(author["name"])
 
         return total
 
     @property
     def colour(self):
-        return getattr(self, '_colour', EmptyEmbed)
+        return getattr(self, "_colour", EmptyEmbed)
 
     @colour.setter
     def colour(self, value):
@@ -208,20 +237,26 @@ class Embed:
         elif isinstance(value, int):
             self._colour = Colour(value=value)
         else:
-            raise TypeError('Expected discord.Colour, int, or Embed.Empty but received %s instead.' % value.__class__.__name__)
+            raise TypeError(
+                "Expected discord.Colour, int, or Embed.Empty but received %s instead."
+                % value.__class__.__name__
+            )
 
     color = colour
 
     @property
     def timestamp(self):
-        return getattr(self, '_timestamp', EmptyEmbed)
+        return getattr(self, "_timestamp", EmptyEmbed)
 
     @timestamp.setter
     def timestamp(self, value):
         if isinstance(value, (datetime.datetime, _EmptyEmbed)):
             self._timestamp = value
         else:
-            raise TypeError("Expected datetime.datetime or Embed.Empty received %s instead" % value.__class__.__name__)
+            raise TypeError(
+                "Expected datetime.datetime or Embed.Empty received %s instead"
+                % value.__class__.__name__
+            )
 
     @property
     def footer(self):
@@ -231,7 +266,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_footer', {}))
+        return EmbedProxy(getattr(self, "_footer", {}))
 
     def set_footer(self, *, text=EmptyEmbed, icon_url=EmptyEmbed):
         """Sets the footer for the embed content.
@@ -249,10 +284,10 @@ class Embed:
 
         self._footer = {}
         if text is not EmptyEmbed:
-            self._footer['text'] = str(text)
+            self._footer["text"] = str(text)
 
         if icon_url is not EmptyEmbed:
-            self._footer['icon_url'] = str(icon_url)
+            self._footer["icon_url"] = str(icon_url)
 
         return self
 
@@ -269,7 +304,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_image', {}))
+        return EmbedProxy(getattr(self, "_image", {}))
 
     def set_image(self, *, url):
         """Sets the image for the embed content.
@@ -289,9 +324,7 @@ class Embed:
         if url is EmptyEmbed:
             del self._image
         else:
-            self._image = {
-                'url': str(url)
-            }
+            self._image = {"url": str(url)}
 
         return self
 
@@ -308,7 +341,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_thumbnail', {}))
+        return EmbedProxy(getattr(self, "_thumbnail", {}))
 
     def set_thumbnail(self, *, url):
         """Sets the thumbnail for the embed content.
@@ -328,9 +361,7 @@ class Embed:
         if url is EmptyEmbed:
             del self._thumbnail
         else:
-            self._thumbnail = {
-                'url': str(url)
-            }
+            self._thumbnail = {"url": str(url)}
 
         return self
 
@@ -346,7 +377,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_video', {}))
+        return EmbedProxy(getattr(self, "_video", {}))
 
     @property
     def provider(self):
@@ -356,7 +387,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_provider', {}))
+        return EmbedProxy(getattr(self, "_provider", {}))
 
     @property
     def author(self):
@@ -366,7 +397,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return EmbedProxy(getattr(self, '_author', {}))
+        return EmbedProxy(getattr(self, "_author", {}))
 
     def set_author(self, *, name, url=EmptyEmbed, icon_url=EmptyEmbed):
         """Sets the author for the embed content.
@@ -384,15 +415,13 @@ class Embed:
             The URL of the author icon. Only HTTP(S) is supported.
         """
 
-        self._author = {
-            'name': str(name)
-        }
+        self._author = {"name": str(name)}
 
         if url is not EmptyEmbed:
-            self._author['url'] = str(url)
+            self._author["url"] = str(url)
 
         if icon_url is not EmptyEmbed:
-            self._author['icon_url'] = str(icon_url)
+            self._author["icon_url"] = str(icon_url)
 
         return self
 
@@ -419,7 +448,7 @@ class Embed:
 
         If the attribute has no value then :attr:`Empty` is returned.
         """
-        return [EmbedProxy(d) for d in getattr(self, '_fields', [])]
+        return [EmbedProxy(d) for d in getattr(self, "_fields", [])]
 
     def add_field(self, *, name, value, inline=True):
         """Adds a field to the embed object.
@@ -437,11 +466,7 @@ class Embed:
             Whether the field should be displayed inline.
         """
 
-        field = {
-            'inline': inline,
-            'name': str(name),
-            'value': str(value)
-        }
+        field = {"inline": inline, "name": str(name), "value": str(value)}
 
         try:
             self._fields.append(field)
@@ -470,11 +495,7 @@ class Embed:
             Whether the field should be displayed inline.
         """
 
-        field = {
-            'inline': inline,
-            'name': str(name),
-            'value': str(value)
-        }
+        field = {"inline": inline, "name": str(name), "value": str(value)}
 
         try:
             self._fields.insert(index, field)
@@ -539,11 +560,11 @@ class Embed:
         try:
             field = self._fields[index]
         except (TypeError, IndexError, AttributeError):
-            raise IndexError('field index out of range')
+            raise IndexError("field index out of range")
 
-        field['name'] = str(name)
-        field['value'] = str(value)
-        field['inline'] = inline
+        field["name"] = str(name)
+        field["value"] = str(value)
+        field["inline"] = inline
         return self
 
     def to_dict(self):
@@ -553,41 +574,45 @@ class Embed:
         result = {
             key[1:]: getattr(self, key)
             for key in self.__slots__
-            if key[0] == '_' and hasattr(self, key)
+            if key[0] == "_" and hasattr(self, key)
         }
 
         # deal with basic convenience wrappers
 
         try:
-            colour = result.pop('colour')
+            colour = result.pop("colour")
         except KeyError:
             pass
         else:
             if colour:
-                result['color'] = colour.value
+                result["color"] = colour.value
 
         try:
-            timestamp = result.pop('timestamp')
+            timestamp = result.pop("timestamp")
         except KeyError:
             pass
         else:
             if timestamp:
                 if timestamp.tzinfo:
-                    result['timestamp'] = timestamp.astimezone(tz=datetime.timezone.utc).isoformat()
+                    result["timestamp"] = timestamp.astimezone(
+                        tz=datetime.timezone.utc
+                    ).isoformat()
                 else:
-                    result['timestamp'] = timestamp.replace(tzinfo=datetime.timezone.utc).isoformat()
+                    result["timestamp"] = timestamp.replace(
+                        tzinfo=datetime.timezone.utc
+                    ).isoformat()
 
         # add in the non raw attribute ones
         if self.type:
-            result['type'] = self.type
+            result["type"] = self.type
 
         if self.description:
-            result['description'] = self.description
+            result["description"] = self.description
 
         if self.url:
-            result['url'] = self.url
+            result["url"] = self.url
 
         if self.title:
-            result['title'] = self.title
+            result["title"] = self.title
 
         return result

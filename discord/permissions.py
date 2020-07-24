@@ -27,8 +27,8 @@ DEALINGS IN THE SOFTWARE.
 from .flags import BaseFlags, fill_with_flags, flag_value
 
 __all__ = (
-    'Permissions',
-    'PermissionOverwrite',
+    "Permissions",
+    "PermissionOverwrite",
 )
 
 # A permission alias works like a regular flag but is marked
@@ -36,12 +36,15 @@ __all__ = (
 class permission_alias(flag_value):
     pass
 
+
 def make_permission_alias(alias):
     def decorator(func):
         ret = permission_alias(func)
         ret.alias = alias
         return ret
+
     return decorator
+
 
 @fill_with_flags()
 class Permissions(BaseFlags):
@@ -96,12 +99,15 @@ class Permissions(BaseFlags):
 
     def __init__(self, permissions=0, **kwargs):
         if not isinstance(permissions, int):
-            raise TypeError('Expected int parameter, received %s instead.' % permissions.__class__.__name__)
+            raise TypeError(
+                "Expected int parameter, received %s instead."
+                % permissions.__class__.__name__
+            )
 
         self.value = permissions
         for key, value in kwargs.items():
             if key not in self.VALID_FLAGS:
-                raise TypeError('%r is not a valid permission name.' % key)
+                raise TypeError("%r is not a valid permission name." % key)
             setattr(self, key, value)
 
     def is_subset(self, other):
@@ -109,14 +115,22 @@ class Permissions(BaseFlags):
         if isinstance(other, Permissions):
             return (self.value & other.value) == self.value
         else:
-            raise TypeError("cannot compare {} with {}".format(self.__class__.__name__, other.__class__.__name__))
+            raise TypeError(
+                "cannot compare {} with {}".format(
+                    self.__class__.__name__, other.__class__.__name__
+                )
+            )
 
     def is_superset(self, other):
         """Returns ``True`` if self has the same or more permissions as other."""
         if isinstance(other, Permissions):
             return (self.value | other.value) == self.value
         else:
-            raise TypeError("cannot compare {} with {}".format(self.__class__.__name__, other.__class__.__name__))
+            raise TypeError(
+                "cannot compare {} with {}".format(
+                    self.__class__.__name__, other.__class__.__name__
+                )
+            )
 
     def is_strict_subset(self, other):
         """Returns ``True`` if the permissions on other are a strict subset of those on self."""
@@ -183,7 +197,6 @@ class Permissions(BaseFlags):
         """A factory method that creates a :class:`Permissions` with all
         "Voice" permissions from the official Discord UI set to ``True``."""
         return cls(0b00000011111100000000001100000000)
-
 
     def update(self, **kwargs):
         r"""Bulk updates this permission object.
@@ -276,7 +289,7 @@ class Permissions(BaseFlags):
         """:class:`bool`: Returns ``True`` if a user can read messages from all or specific text channels."""
         return 1 << 10
 
-    @make_permission_alias('read_messages')
+    @make_permission_alias("read_messages")
     def view_channel(self):
         """:class:`bool`: An alias for :attr:`read_messages`.
 
@@ -329,7 +342,7 @@ class Permissions(BaseFlags):
         """:class:`bool`: Returns ``True`` if a user can use emojis from other guilds."""
         return 1 << 18
 
-    @make_permission_alias('external_emojis')
+    @make_permission_alias("external_emojis")
     def use_external_emojis(self):
         """:class:`bool`: An alias for :attr:`external_emojis`.
 
@@ -393,7 +406,7 @@ class Permissions(BaseFlags):
         """
         return 1 << 28
 
-    @make_permission_alias('manage_roles')
+    @make_permission_alias("manage_roles")
     def manage_permissions(self):
         """:class:`bool`: An alias for :attr:`manage_roles`.
 
@@ -415,6 +428,7 @@ class Permissions(BaseFlags):
 
     # after these 32 bits, there's 21 more unused ones technically
 
+
 def augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)
     aliases = set()
@@ -432,6 +446,7 @@ def augment_from_permissions(cls):
         # god bless Python
         def getter(self, x=key):
             return self._values.get(x)
+
         def setter(self, value, x=key):
             self._set(x, value)
 
@@ -440,6 +455,7 @@ def augment_from_permissions(cls):
 
     cls.PURE_FLAGS = cls.VALID_NAMES - aliases
     return cls
+
 
 @augment_from_permissions
 class PermissionOverwrite:
@@ -474,14 +490,14 @@ class PermissionOverwrite:
         Set the value of permissions by their name.
     """
 
-    __slots__ = ('_values',)
+    __slots__ = ("_values",)
 
     def __init__(self, **kwargs):
         self._values = {}
 
         for key, value in kwargs.items():
             if key not in self.VALID_NAMES:
-                raise ValueError('no permission called {0}.'.format(key))
+                raise ValueError("no permission called {0}.".format(key))
 
             setattr(self, key, value)
 
@@ -490,7 +506,11 @@ class PermissionOverwrite:
 
     def _set(self, key, value):
         if value not in (True, None, False):
-            raise TypeError('Expected bool or NoneType, received {0.__class__.__name__}'.format(value))
+            raise TypeError(
+                "Expected bool or NoneType, received {0.__class__.__name__}".format(
+                    value
+                )
+            )
 
         self._values[key] = value
 

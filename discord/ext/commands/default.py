@@ -27,17 +27,18 @@ DEALINGS IN THE SOFTWARE.
 from .errors import MissingRequiredArgument
 
 __all__ = (
-    'CustomDefault',
-    'Author',
-    'CurrentChannel',
-    'CurrentGuild',
-    'Call',
+    "CustomDefault",
+    "Author",
+    "CurrentChannel",
+    "CurrentGuild",
+    "Call",
 )
+
 
 class CustomDefaultMeta(type):
     def __new__(cls, *args, **kwargs):
         name, bases, attrs = args
-        attrs['display'] = kwargs.pop('display', name)
+        attrs["display"] = kwargs.pop("display", name)
         return super().__new__(cls, name, bases, attrs, **kwargs)
 
     def __repr__(cls):
@@ -45,6 +46,7 @@ class CustomDefaultMeta(type):
 
     def __str__(cls):
         return cls.display
+
 
 class CustomDefault(metaclass=CustomDefaultMeta):
     """The base class of custom defaults that require the :class:`.Context`.
@@ -67,7 +69,7 @@ class CustomDefault(metaclass=CustomDefaultMeta):
         ctx: :class:`.Context`
             The invocation context that the argument is being used in.
         """
-        raise NotImplementedError('Derived classes need to implement this.')
+        raise NotImplementedError("Derived classes need to implement this.")
 
 
 class Author(CustomDefault):
@@ -76,11 +78,13 @@ class Author(CustomDefault):
     async def default(self, ctx, param):
         return ctx.author
 
+
 class CurrentChannel(CustomDefault):
     """Default parameter which returns the channel for this context."""
 
     async def default(self, ctx, param):
         return ctx.channel
+
 
 class CurrentGuild(CustomDefault):
     """Default parameter which returns the guild for this context."""
@@ -90,11 +94,17 @@ class CurrentGuild(CustomDefault):
             return ctx.guild
         raise MissingRequiredArgument(param)
 
+
 class Call(CustomDefault):
     """Easy wrapper for lambdas/inline defaults."""
 
-    def __init__(self, callback):
+    def __init__(self, callback, *, display=None):
         self._callback = callback
+        if display:
+            self.display = display
 
     async def default(self, ctx, param):
         return self._callback(ctx, param)
+
+    def __str__(self):
+        return self.display

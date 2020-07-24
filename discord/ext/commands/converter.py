@@ -33,23 +33,24 @@ import discord
 from .errors import BadArgument, NoPrivateMessage
 
 __all__ = (
-    'Converter',
-    'MemberConverter',
-    'UserConverter',
-    'MessageConverter',
-    'TextChannelConverter',
-    'InviteConverter',
-    'RoleConverter',
-    'GameConverter',
-    'ColourConverter',
-    'VoiceChannelConverter',
-    'EmojiConverter',
-    'PartialEmojiConverter',
-    'CategoryChannelConverter',
-    'IDConverter',
-    'clean_content',
-    'Greedy',
+    "Converter",
+    "MemberConverter",
+    "UserConverter",
+    "MessageConverter",
+    "TextChannelConverter",
+    "InviteConverter",
+    "RoleConverter",
+    "GameConverter",
+    "ColourConverter",
+    "VoiceChannelConverter",
+    "EmojiConverter",
+    "PartialEmojiConverter",
+    "CategoryChannelConverter",
+    "IDConverter",
+    "clean_content",
+    "Greedy",
 )
+
 
 def _get_from_guilds(bot, getter, argument):
     result = None
@@ -59,7 +60,9 @@ def _get_from_guilds(bot, getter, argument):
             return result
     return result
 
+
 _utils_get = discord.utils.get
+
 
 class Converter:
     """The base class of custom converters that require the :class:`.Context`
@@ -95,15 +98,17 @@ class Converter:
         :exc:`.BadArgument`
             The converter failed to convert the argument.
         """
-        raise NotImplementedError('Derived classes need to implement this.')
+        raise NotImplementedError("Derived classes need to implement this.")
+
 
 class IDConverter(Converter):
     def __init__(self):
-        self._id_regex = re.compile(r'([0-9]{15,21})$')
+        self._id_regex = re.compile(r"([0-9]{15,21})$")
         super().__init__()
 
     def _get_id_match(self, argument):
         return self._id_regex.match(argument)
+
 
 class MemberConverter(IDConverter):
     """Converts to a :class:`~discord.Member`.
@@ -122,7 +127,7 @@ class MemberConverter(IDConverter):
 
     async def convert(self, ctx, argument):
         bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         guild = ctx.guild
         result = None
         if match is None:
@@ -130,18 +135,21 @@ class MemberConverter(IDConverter):
             if guild:
                 result = guild.get_member_named(argument)
             else:
-                result = _get_from_guilds(bot, 'get_member_named', argument)
+                result = _get_from_guilds(bot, "get_member_named", argument)
         else:
             user_id = int(match.group(1))
             if guild:
-                result = guild.get_member(user_id) or _utils_get(ctx.message.mentions, id=user_id)
+                result = guild.get_member(user_id) or _utils_get(
+                    ctx.message.mentions, id=user_id
+                )
             else:
-                result = _get_from_guilds(bot, 'get_member', user_id)
+                result = _get_from_guilds(bot, "get_member", user_id)
 
         if result is None:
             raise BadArgument('Member "{}" not found'.format(argument))
 
         return result
+
 
 class UserConverter(IDConverter):
     """Converts to a :class:`~discord.User`.
@@ -155,24 +163,27 @@ class UserConverter(IDConverter):
     3. Lookup by name#discrim
     4. Lookup by name
     """
+
     async def convert(self, ctx, argument):
-        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         result = None
         state = ctx._state
 
         if match is not None:
             user_id = int(match.group(1))
-            result = ctx.bot.get_user(user_id) or _utils_get(ctx.message.mentions, id=user_id)
+            result = ctx.bot.get_user(user_id) or _utils_get(
+                ctx.message.mentions, id=user_id
+            )
         else:
             arg = argument
 
             # Remove the '@' character if this is the first character from the argument
-            if arg[0] == '@':
+            if arg[0] == "@":
                 # Remove first character
                 arg = arg[1:]
 
             # check for discriminator if it exists,
-            if len(arg) > 5 and arg[-5] == '#':
+            if len(arg) > 5 and arg[-5] == "#":
                 discrim = arg[-4:]
                 name = arg[:-5]
                 predicate = lambda u: u.name == name and u.discriminator == discrim
@@ -188,6 +199,7 @@ class UserConverter(IDConverter):
 
         return result
 
+
 class MessageConverter(Converter):
     """Converts to a :class:`discord.Message`.
 
@@ -201,11 +213,13 @@ class MessageConverter(Converter):
     """
 
     async def convert(self, ctx, argument):
-        id_regex = re.compile(r'^(?:(?P<channel_id>[0-9]{15,21})-)?(?P<message_id>[0-9]{15,21})$')
+        id_regex = re.compile(
+            r"^(?:(?P<channel_id>[0-9]{15,21})-)?(?P<message_id>[0-9]{15,21})$"
+        )
         link_regex = re.compile(
-            r'^https?://(?:(ptb|canary)\.)?discord(?:app)?\.com/channels/'
-            r'(?:([0-9]{15,21})|(@me))'
-            r'/(?P<channel_id>[0-9]{15,21})/(?P<message_id>[0-9]{15,21})/?$'
+            r"^https?://(?:(ptb|canary)\.)?discord(?:app)?\.com/channels/"
+            r"(?:([0-9]{15,21})|(@me))"
+            r"/(?P<channel_id>[0-9]{15,21})/(?P<message_id>[0-9]{15,21})/?$"
         )
         match = id_regex.match(argument) or link_regex.match(argument)
         if not match:
@@ -217,13 +231,18 @@ class MessageConverter(Converter):
             return message
         channel = ctx.bot.get_channel(int(channel_id)) if channel_id else ctx.channel
         if not channel:
-            raise BadArgument('Channel "{channel}" not found.'.format(channel=channel_id))
+            raise BadArgument(
+                'Channel "{channel}" not found.'.format(channel=channel_id)
+            )
         try:
             return await channel.fetch_message(message_id)
         except discord.NotFound:
             raise BadArgument('Message "{msg}" not found.'.format(msg=argument))
         except discord.Forbidden:
-            raise BadArgument("Can't read messages in {channel}".format(channel=channel.mention))
+            raise BadArgument(
+                "Can't read messages in {channel}".format(channel=channel.mention)
+            )
+
 
 class TextChannelConverter(IDConverter):
     """Converts to a :class:`~discord.TextChannel`.
@@ -237,10 +256,11 @@ class TextChannelConverter(IDConverter):
     2. Lookup by mention.
     3. Lookup by name
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
 
-        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<#([0-9]+)>$", argument)
         result = None
         guild = ctx.guild
 
@@ -249,20 +269,23 @@ class TextChannelConverter(IDConverter):
             if guild:
                 result = discord.utils.get(guild.text_channels, name=argument)
             else:
+
                 def check(c):
                     return isinstance(c, discord.TextChannel) and c.name == argument
+
                 result = discord.utils.find(check, bot.get_all_channels())
         else:
             channel_id = int(match.group(1))
             if guild:
                 result = guild.get_channel(channel_id)
             else:
-                result = _get_from_guilds(bot, 'get_channel', channel_id)
+                result = _get_from_guilds(bot, "get_channel", channel_id)
 
         if not isinstance(result, discord.TextChannel):
             raise BadArgument('Channel "{}" not found.'.format(argument))
 
         return result
+
 
 class VoiceChannelConverter(IDConverter):
     """Converts to a :class:`~discord.VoiceChannel`.
@@ -276,9 +299,10 @@ class VoiceChannelConverter(IDConverter):
     2. Lookup by mention.
     3. Lookup by name
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
-        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<#([0-9]+)>$", argument)
         result = None
         guild = ctx.guild
 
@@ -287,20 +311,23 @@ class VoiceChannelConverter(IDConverter):
             if guild:
                 result = discord.utils.get(guild.voice_channels, name=argument)
             else:
+
                 def check(c):
                     return isinstance(c, discord.VoiceChannel) and c.name == argument
+
                 result = discord.utils.find(check, bot.get_all_channels())
         else:
             channel_id = int(match.group(1))
             if guild:
                 result = guild.get_channel(channel_id)
             else:
-                result = _get_from_guilds(bot, 'get_channel', channel_id)
+                result = _get_from_guilds(bot, "get_channel", channel_id)
 
         if not isinstance(result, discord.VoiceChannel):
             raise BadArgument('Channel "{}" not found.'.format(argument))
 
         return result
+
 
 class CategoryChannelConverter(IDConverter):
     """Converts to a :class:`~discord.CategoryChannel`.
@@ -314,10 +341,11 @@ class CategoryChannelConverter(IDConverter):
     2. Lookup by mention.
     3. Lookup by name
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
 
-        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<#([0-9]+)>$", argument)
         result = None
         guild = ctx.guild
 
@@ -326,20 +354,23 @@ class CategoryChannelConverter(IDConverter):
             if guild:
                 result = discord.utils.get(guild.categories, name=argument)
             else:
+
                 def check(c):
                     return isinstance(c, discord.CategoryChannel) and c.name == argument
+
                 result = discord.utils.find(check, bot.get_all_channels())
         else:
             channel_id = int(match.group(1))
             if guild:
                 result = guild.get_channel(channel_id)
             else:
-                result = _get_from_guilds(bot, 'get_channel', channel_id)
+                result = _get_from_guilds(bot, "get_channel", channel_id)
 
         if not isinstance(result, discord.CategoryChannel):
             raise BadArgument('Channel "{}" not found.'.format(argument))
 
         return result
+
 
 class ColourConverter(Converter):
     """Converts to a :class:`~discord.Colour`.
@@ -353,10 +384,11 @@ class ColourConverter(Converter):
 
         - The ``_`` in the name can be optionally replaced with spaces.
     """
-    async def convert(self, ctx, argument):
-        arg = argument.replace('0x', '').lower()
 
-        if arg[0] == '#':
+    async def convert(self, ctx, argument):
+        arg = argument.replace("0x", "").lower()
+
+        if arg[0] == "#":
             arg = arg[1:]
         try:
             value = int(arg, base=16)
@@ -364,11 +396,16 @@ class ColourConverter(Converter):
                 raise BadArgument('Colour "{}" is invalid.'.format(arg))
             return discord.Colour(value=value)
         except ValueError:
-            arg = arg.replace(' ', '_')
+            arg = arg.replace(" ", "_")
             method = getattr(discord.Colour, arg, None)
-            if arg.startswith('from_') or method is None or not inspect.ismethod(method):
+            if (
+                arg.startswith("from_")
+                or method is None
+                or not inspect.ismethod(method)
+            ):
                 raise BadArgument('Colour "{}" is invalid.'.format(arg))
             return method()
+
 
 class RoleConverter(IDConverter):
     """Converts to a :class:`~discord.Role`.
@@ -382,12 +419,13 @@ class RoleConverter(IDConverter):
     2. Lookup by mention.
     3. Lookup by name
     """
+
     async def convert(self, ctx, argument):
         guild = ctx.guild
         if not guild:
             raise NoPrivateMessage()
 
-        match = self._get_id_match(argument) or re.match(r'<@&([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(r"<@&([0-9]+)>$", argument)
         if match:
             result = guild.get_role(int(match.group(1)))
         else:
@@ -397,22 +435,27 @@ class RoleConverter(IDConverter):
             raise BadArgument('Role "{}" not found.'.format(argument))
         return result
 
+
 class GameConverter(Converter):
     """Converts to :class:`~discord.Game`."""
+
     async def convert(self, ctx, argument):
         return discord.Game(name=argument)
+
 
 class InviteConverter(Converter):
     """Converts to a :class:`~discord.Invite`.
 
     This is done via an HTTP request using :meth:`.Bot.fetch_invite`.
     """
+
     async def convert(self, ctx, argument):
         try:
             invite = await ctx.bot.fetch_invite(argument)
             return invite
         except Exception as exc:
-            raise BadArgument('Invite is invalid or expired') from exc
+            raise BadArgument("Invite is invalid or expired") from exc
+
 
 class EmojiConverter(IDConverter):
     """Converts to a :class:`~discord.Emoji`.
@@ -426,8 +469,11 @@ class EmojiConverter(IDConverter):
     2. Lookup by extracting ID from the emoji.
     3. Lookup by name
     """
+
     async def convert(self, ctx, argument):
-        match = self._get_id_match(argument) or re.match(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>$', argument)
+        match = self._get_id_match(argument) or re.match(
+            r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$", argument
+        )
         result = None
         bot = ctx.bot
         guild = ctx.guild
@@ -454,23 +500,30 @@ class EmojiConverter(IDConverter):
 
         return result
 
+
 class PartialEmojiConverter(Converter):
     """Converts to a :class:`~discord.PartialEmoji`.
 
     This is done by extracting the animated flag, name and ID from the emoji.
     """
+
     async def convert(self, ctx, argument):
-        match = re.match(r'<(a?):([a-zA-Z0-9\_]+):([0-9]+)>$', argument)
+        match = re.match(r"<(a?):([a-zA-Z0-9\_]+):([0-9]+)>$", argument)
 
         if match:
             emoji_animated = bool(match.group(1))
             emoji_name = match.group(2)
             emoji_id = int(match.group(3))
 
-            return discord.PartialEmoji.with_state(ctx.bot._connection, animated=emoji_animated, name=emoji_name,
-                                                   id=emoji_id)
+            return discord.PartialEmoji.with_state(
+                ctx.bot._connection,
+                animated=emoji_animated,
+                name=emoji_name,
+                id=emoji_id,
+            )
 
         raise BadArgument('Couldn\'t convert "{}" to PartialEmoji.'.format(argument))
+
 
 class clean_content(Converter):
     """Converts the argument to mention scrubbed version of
@@ -487,7 +540,10 @@ class clean_content(Converter):
     escape_markdown: :class:`bool`
         Whether to also escape special markdown characters.
     """
-    def __init__(self, *, fix_channel_mentions=False, use_nicknames=True, escape_markdown=False):
+
+    def __init__(
+        self, *, fix_channel_mentions=False, use_nicknames=True, escape_markdown=False
+    ):
         self.fix_channel_mentions = fix_channel_mentions
         self.use_nicknames = use_nicknames
         self.escape_markdown = escape_markdown
@@ -497,46 +553,52 @@ class clean_content(Converter):
         transformations = {}
 
         if self.fix_channel_mentions and ctx.guild:
+
             def resolve_channel(id, *, _get=ctx.guild.get_channel):
                 ch = _get(id)
-                return ('<#%s>' % id), ('#' + ch.name if ch else '#deleted-channel')
+                return ("<#%s>" % id), ("#" + ch.name if ch else "#deleted-channel")
 
-            transformations.update(resolve_channel(channel) for channel in message.raw_channel_mentions)
+            transformations.update(
+                resolve_channel(channel) for channel in message.raw_channel_mentions
+            )
 
         if self.use_nicknames and ctx.guild:
+
             def resolve_member(id, *, _get=ctx.guild.get_member):
                 m = _get(id)
-                return '@' + m.display_name if m else '@deleted-user'
+                return "@" + m.display_name if m else "@deleted-user"
+
         else:
+
             def resolve_member(id, *, _get=ctx.bot.get_user):
                 m = _get(id)
-                return '@' + m.name if m else '@deleted-user'
-
+                return "@" + m.name if m else "@deleted-user"
 
         transformations.update(
-            ('<@%s>' % member_id, resolve_member(member_id))
+            ("<@%s>" % member_id, resolve_member(member_id))
             for member_id in message.raw_mentions
         )
 
         transformations.update(
-            ('<@!%s>' % member_id, resolve_member(member_id))
+            ("<@!%s>" % member_id, resolve_member(member_id))
             for member_id in message.raw_mentions
         )
 
         if ctx.guild:
+
             def resolve_role(_id, *, _find=ctx.guild.get_role):
                 r = _find(_id)
-                return '@' + r.name if r else '@deleted-role'
+                return "@" + r.name if r else "@deleted-role"
 
             transformations.update(
-                ('<@&%s>' % role_id, resolve_role(role_id))
+                ("<@&%s>" % role_id, resolve_role(role_id))
                 for role_id in message.raw_role_mentions
             )
 
         def repl(obj):
-            return transformations.get(obj.group(0), '')
+            return transformations.get(obj.group(0), "")
 
-        pattern = re.compile('|'.join(transformations.keys()))
+        pattern = re.compile("|".join(transformations.keys()))
         result = pattern.sub(repl, argument)
 
         if self.escape_markdown:
@@ -545,8 +607,9 @@ class clean_content(Converter):
         # Completely ensure no mentions escape:
         return discord.utils.escape_mentions(result)
 
+
 class _Greedy:
-    __slots__ = ('converter',)
+    __slots__ = ("converter",)
 
     def __init__(self, *, converter=None):
         self.converter = converter
@@ -555,18 +618,26 @@ class _Greedy:
         if not isinstance(params, tuple):
             params = (params,)
         if len(params) != 1:
-            raise TypeError('Greedy[...] only takes a single argument')
+            raise TypeError("Greedy[...] only takes a single argument")
         converter = params[0]
 
-        if not (callable(converter) or isinstance(converter, Converter) or hasattr(converter, '__origin__')):
-            raise TypeError('Greedy[...] expects a type or a Converter instance.')
+        if not (
+            callable(converter)
+            or isinstance(converter, Converter)
+            or hasattr(converter, "__origin__")
+        ):
+            raise TypeError("Greedy[...] expects a type or a Converter instance.")
 
         if converter is str or converter is type(None) or converter is _Greedy:
-            raise TypeError('Greedy[%s] is invalid.' % converter.__name__)
+            raise TypeError("Greedy[%s] is invalid." % converter.__name__)
 
-        if getattr(converter, '__origin__', None) is typing.Union and type(None) in converter.__args__:
-            raise TypeError('Greedy[%r] is invalid.' % converter)
+        if (
+            getattr(converter, "__origin__", None) is typing.Union
+            and type(None) in converter.__args__
+        ):
+            raise TypeError("Greedy[%r] is invalid." % converter)
 
         return self.__class__(converter=converter)
+
 
 Greedy = _Greedy()
