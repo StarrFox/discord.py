@@ -36,6 +36,7 @@ from ._types import _BaseCommand
 from .cog import Cog
 from .cooldowns import BucketType, Cooldown, CooldownMapping, MaxConcurrency
 from .errors import *
+from .view import Separator, Encapsulator
 
 __all__ = (
     'Command',
@@ -187,6 +188,9 @@ class Command(_BaseCommand):
         If ``True``\, cooldown processing is done after argument parsing,
         which calls converters. If ``False`` then cooldown processing is done
         first and then the converters are called second. Defaults to ``False``.
+    qualifier: Union[:class:`Separator`, :class:`Encapsulator`]
+        The qualifier for how arguments should be delimited. By default, it is
+        :class:`Separator`.
     """
 
     def __new__(cls, *args, **kwargs):
@@ -266,6 +270,9 @@ class Command(_BaseCommand):
         # bandaid for the fact that sometimes parent can be the bot instance
         parent = kwargs.get('parent')
         self.parent = parent if isinstance(parent, _BaseCommand) else None
+        self._before_invoke = None
+        self._after_invoke = None
+        self.qualifier = kwargs.pop('qualifier', Separator())
 
         try:
             before_invoke = func.__before_invoke__
@@ -680,6 +687,11 @@ class Command(_BaseCommand):
 
         view = ctx.view
         iterator = iter(self.params.items())
+        qual = ctx.command.qualifier
+        if isinstance(qual, Separator):
+            view.separator = qual
+        elif isinstance(qual, Encapsulator):
+            view.encapsulator = qual
 
         if self.cog is not None:
             # we have 'self' as the first parameter so just advance
@@ -978,6 +990,7 @@ class Command(_BaseCommand):
             return ''
 
         result = []
+        result_params = []
         for name, param in params.items():
             greedy = isinstance(param.annotation, converters._Greedy)
 
@@ -986,20 +999,22 @@ class Command(_BaseCommand):
                 # do [name] since [name=None] or [name=] are not exactly useful for the user.
                 should_print = param.default if isinstance(param.default, str) else param.default is not None
                 if should_print:
-                    result.append('[%s=%s]' % (name, param.default) if not greedy else
-                                  '[%s=%s]...' % (name, param.default))
+                    result_params.append('[%s=%s]' % (name, param.default) if not greedy else
+                                         '[%s=%s]...' % (name, param.default))
                     continue
                 else:
-                    result.append('[%s]' % name)
+                    result_params.append('[%s]' % name)
 
             elif param.kind == param.VAR_POSITIONAL:
-                result.append('[%s...]' % name)
+                result_params.append('[%s...]' % name)
             elif greedy:
-                result.append('[%s]...' % name)
+                result_params.append('[%s]...' % name)
             elif self._is_typing_optional(param.annotation):
                 result.append('[%s]' % name)
             else:
-                result.append('<%s>' % name)
+                result_params.append('<%s>' % name)
+
+        result.append(self.qualifier.key.join(result_params))
 
         return ' '.join(result)
 
@@ -1276,7 +1291,10 @@ class Group(GroupMixin, Command):
         view = ctx.view
         previous = view.index
         view.skip_ws()
+        sep = view.separator
+        view.separator = None
         trigger = view.get_word()
+        view.separator = sep
 
         if trigger:
             ctx.subcommand_passed = trigger
@@ -1308,7 +1326,10 @@ class Group(GroupMixin, Command):
         view = ctx.view
         previous = view.index
         view.skip_ws()
+        sep = view.separator
+        view.separator = None
         trigger = view.get_word()
+        view.separator = sep
 
         if trigger:
             ctx.subcommand_passed = trigger
