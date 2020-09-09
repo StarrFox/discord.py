@@ -164,9 +164,16 @@ class Guild(Hashable):
         The guild's discovery splash.
 
         .. versionadded:: 1.3
+
+    approximate_member_count: Optional[:class:`int`]
+        approximate number of members in the guild
+    approximate_presence_count: Optional[:class:`int`]
+        approximate number of presences in the guild
     """
 
     __slots__ = (
+        "approximate_member_count",
+        "approximate_presence_count",
         "afk_timeout",
         "afk_channel",
         "_members",
@@ -294,11 +301,9 @@ class Guild(Hashable):
         return role
 
     def _from_data(self, guild):
-        # according to Stan, this is always available even if the guild is unavailable
-        # I don't have this guarantee when someone updates the guild.
-        member_count = guild.get("member_count", None)
-        if member_count is not None:
-            self._member_count = member_count
+        self._member_count = guild.get("member_count", None)
+        self._approximate_member_count = guild.get("approximate_member_count", None)
+        self._approximate_presence_count = guild.get("approximate_presence_count", None)
 
         self.name = guild.get("name")
         self.region = try_enum(VoiceRegion, guild.get("region"))
@@ -759,8 +764,18 @@ class Guild(Hashable):
 
     @property
     def member_count(self):
-        """:class:`int`: Returns the true member count regardless of it being loaded fully or not."""
+        """Optional[:class:`int`:] Returns the true member count regardless of it being loaded fully or not."""
         return self._member_count
+
+    @property
+    def approximate_member_count(self):
+        """Optional[:class:`int`] Returns the approximate member count"""
+        return self._approximate_member_count
+
+    @property
+    def approximate_presence_count(self):
+        """Optional[:class:`int`] Returns the approximate presence count"""
+        return self._approximate_presence_count
 
     @property
     def chunked(self):

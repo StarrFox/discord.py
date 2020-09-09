@@ -1078,7 +1078,7 @@ class Client:
         data = await self.http.get_template(code)
         return Template(data=data, state=self._connection)
 
-    async def fetch_guild(self, guild_id):
+    async def fetch_guild(self, guild_id, *, with_counts: bool = True):
         """|coro|
 
         Retrieves a :class:`.Guild` from an ID.
@@ -1096,6 +1096,8 @@ class Client:
         -----------
         guild_id: :class:`int`
             The guild's ID to fetch from.
+        with_counts: :class:`bool`
+            Wether or not to recieve approximate_member/presence_count
 
         Raises
         ------
@@ -1109,7 +1111,7 @@ class Client:
         :class:`.Guild`
             The guild from the ID.
         """
-        data = await self.http.get_guild(guild_id)
+        data = await self.http.get_guild(guild_id, with_counts=with_counts)
         return Guild(data=data, state=self._connection)
 
     async def create_guild(self, name, region=None, icon=None, *, code=None):
