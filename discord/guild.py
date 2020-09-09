@@ -172,8 +172,8 @@ class Guild(Hashable):
     """
 
     __slots__ = (
-        "approximate_member_count",
-        "approximate_presence_count",
+        "_approximate_member_count",
+        "_approximate_presence_count",
         "afk_timeout",
         "afk_channel",
         "_members",
