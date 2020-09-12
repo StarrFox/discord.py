@@ -397,7 +397,7 @@ class Guild(Hashable):
         """
         if self._large is None:
             try:
-                return self._member_count >= 250
+                return self._member_count >= 250 if self._member_count else False
             except AttributeError:
                 return len(self._members) >= 250
         return self._large

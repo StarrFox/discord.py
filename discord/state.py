@@ -740,13 +740,18 @@ class ConnectionState:
         member = Member(guild=guild, data=data, state=self)
         if self._cache_members:
             guild._add_member(member)
-        guild._member_count += 1
+
+        if guild._member_count is not None:
+            guild._member_count += 1
+
         self.dispatch("member_join", member)
 
     def parse_guild_member_remove(self, data):
         guild = self._get_guild(int(data["guild_id"]))
         if guild is not None:
-            guild._member_count -= 1
+            if guild._member_count is not None:
+                guild._member_count -= 1
+
             user_id = int(data["user"]["id"])
             member = guild.get_member(user_id)
             if member is not None:
